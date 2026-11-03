@@ -113,7 +113,20 @@ const secciones = [
 ]
 
 function App() {
+  const [mostrarRestablecerPassword, setMostrarRestablecerPassword] = useState(false)
+const [nuevaPassword, setNuevaPassword] = useState('')
+const [confirmarPassword, setConfirmarPassword] = useState('')
+const [errorRestablecer, setErrorRestablecer] = useState('')
+const [exitoRestablecer, setExitoRestablecer] = useState(false)
+const [cargandoRestablecer, setCargandoRestablecer] = useState(false)
+  const [usuario, setUsuario] = useState<any>(null)
+const [perfilUsuario, setPerfilUsuario] = useState<any>(null)
   const [data, setData] = useState<any>(null)
+  const [mostrarLogin, setMostrarLogin] = useState(false)
+const [emailLogin, setEmailLogin] = useState('')
+const [passwordLogin, setPasswordLogin] = useState('')
+const [errorLogin, setErrorLogin] = useState('')
+const [cargandoLogin, setCargandoLogin] = useState(false)
   const [circuitoSeleccionado, setCircuitoSeleccionado] = useState('')
   const [circuitoFicha, setCircuitoFicha] = useState<any>(null)
   const [busquedaCircuito, setBusquedaCircuito] = useState('')
@@ -133,6 +146,101 @@ function App() {
     'comprobando' | 'conectado' | 'error'
   >('comprobando')
 
+  const iniciarSesion = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault()
+
+  setCargandoLogin(true)
+  setErrorLogin('')
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: emailLogin.trim(),
+    password: passwordLogin,
+  })
+
+  if (error || !data.user) {
+    setErrorLogin('Correo o contraseña incorrectos.')
+    setCargandoLogin(false)
+    return
+  }
+
+  const { data: perfil, error: errorPerfil } = await supabase
+    .from('perfiles')
+    .select('id, nombre, rol, activo, debe_cambiar_password')
+    .eq('id', data.user.id)
+    .maybeSingle()
+
+  if (errorPerfil || !perfil || !perfil.activo) {
+    await supabase.auth.signOut()
+    setErrorLogin('La cuenta no está habilitada para ingresar.')
+    setCargandoLogin(false)
+    return
+  }
+
+  if (perfil.debe_cambiar_password) {
+    await supabase.auth.signOut()
+    setErrorLogin('Esta cuenta debe cambiar su contraseña inicial. Estamos preparando ese paso.')
+    setCargandoLogin(false)
+    return
+  }
+
+  setUsuario(data.user)
+  setPerfilUsuario(perfil)
+  setMostrarLogin(false)
+  setPasswordLogin('')
+  setCargandoLogin(false)
+}
+const restablecerPassword = async (
+  e: React.FormEvent<HTMLFormElement>
+) => {
+  e.preventDefault()
+
+  setErrorRestablecer('')
+  setExitoRestablecer(false)
+
+  if (nuevaPassword.length < 12) {
+    setErrorRestablecer('La contraseña debe tener al menos 12 caracteres.')
+    return
+  }
+
+  if (nuevaPassword !== confirmarPassword) {
+    setErrorRestablecer('Las contraseñas no coinciden.')
+    return
+  }
+
+  setCargandoRestablecer(true)
+
+  const { error } = await supabase.auth.updateUser({
+    password: nuevaPassword,
+  })
+
+  if (error) {
+    setErrorRestablecer(error.message)
+    setCargandoRestablecer(false)
+    return
+  }
+
+  await supabase.auth.signOut()
+
+  setNuevaPassword('')
+  setConfirmarPassword('')
+  setCargandoRestablecer(false)
+  setExitoRestablecer(true)
+}
+useEffect(() => {
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      setMostrarRestablecerPassword(true)
+      setErrorRestablecer('')
+      setExitoRestablecer(false)
+    }
+  })
+
+  return () => {
+    subscription.unsubscribe()
+  }
+}, [])
   // CONEXIÓN CON SUPABASE
   useEffect(() => {
     const comprobarConexion = async () => {
@@ -370,7 +478,8 @@ function App() {
     return mapa
   }, [resultadosPorCircuito])
 
- 
+
+
   // NAVEGACIÓN
   const irASeccion = (nombre: string) => {
     setSeccion(nombre)
@@ -650,7 +759,7 @@ const bloqueMapaHistorico = (
           >
             <AjustarMapa data={data} />
 
-           {/* MAPA BASE: ESTILO OSCURO */}
+            {/* MAPA BASE: ESTILO OSCURO */}
 <TileLayer
   attribution='Tiles &copy; Esri &mdash; Sources: Esri, HERE, Garmin, OpenStreetMap contributors'
   url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
@@ -1017,6 +1126,16 @@ const bloqueMapaHistorico = (
           </button>
 
           <div className="encabezado-derecha">
+          <button
+  className="boton-login-header"
+  onClick={() => {
+    setErrorLogin('')
+    setMostrarLogin(true)
+  }}
+>
+  <span aria-hidden="true">↪</span>
+  Iniciar sesión
+</button>
             <span className="estado-header">
               <i className={`estado-punto ${estadoSupabase}`} />
 
@@ -1199,6 +1318,148 @@ const bloqueMapaHistorico = (
               </div>
             </div>
           </section>
+        )}
+        {mostrarLogin && (
+          <div
+            className="login-overlay"
+            onClick={() => setMostrarLogin(false)}
+          >
+            <section
+              className="login-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                className="login-cerrar"
+                onClick={() => setMostrarLogin(false)}
+              >
+                ×
+              </button>
+
+              <span className="login-logo">OLM</span>
+
+              <h2>Iniciar sesión</h2>
+              <p>Ingresá con tu cuenta del Observatorio.</p>
+
+              <form onSubmit={iniciarSesion}>
+                <label htmlFor="email-login">
+                  Correo electrónico
+                </label>
+                <input
+                  id="email-login"
+                  type="email"
+                  value={emailLogin}
+                  onChange={(e) => setEmailLogin(e.target.value)}
+                  placeholder="nombre@correo.com"
+                  required
+                />
+
+                <label htmlFor="password-login">
+                  Contraseña
+                </label>
+                <input
+                  id="password-login"
+                  type="password"
+                  value={passwordLogin}
+                  onChange={(e) => setPasswordLogin(e.target.value)}
+                  placeholder="Ingresá tu contraseña"
+                  required
+                />
+
+                {errorLogin && (
+                  <p className="login-error">{errorLogin}</p>
+                )}
+
+                <button
+                  type="submit"
+                  className="login-submit"
+                  disabled={cargandoLogin}
+                >
+                  {cargandoLogin ? 'Ingresando...' : 'Ingresar'}
+                </button>
+              </form>
+            </section>
+            </div>
+        )}
+
+        {mostrarRestablecerPassword && (
+          <div className="login-overlay">
+            <section className="login-modal">
+              <span className="login-logo">OLM</span>
+
+              {exitoRestablecer ? (
+                <>
+                  <h2>¡Contraseña actualizada!</h2>
+                  <p>
+                    Ya podés ingresar al Observatorio con tu nueva contraseña.
+                  </p>
+
+                  <button
+                    type="button"
+                    className="login-submit"
+                    onClick={() => {
+                      setMostrarRestablecerPassword(false)
+                      setExitoRestablecer(false)
+                      setMostrarLogin(true)
+                    }}
+                  >
+                    Ir a iniciar sesión
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2>Crear nueva contraseña</h2>
+                  <p>Elegí una contraseña nueva para tu cuenta.</p>
+
+                  <form onSubmit={restablecerPassword}>
+                    <label htmlFor="nueva-password">
+                      Nueva contraseña
+                    </label>
+
+                    <input
+                      id="nueva-password"
+                      type="password"
+                      value={nuevaPassword}
+                      onChange={(e) => setNuevaPassword(e.target.value)}
+                      placeholder="Mínimo 12 caracteres"
+                      minLength={12}
+                      required
+                    />
+
+                    <label htmlFor="confirmar-password">
+                      Confirmar contraseña
+                    </label>
+
+                    <input
+                      id="confirmar-password"
+                      type="password"
+                      value={confirmarPassword}
+                      onChange={(e) => setConfirmarPassword(e.target.value)}
+                      placeholder="Repetí tu contraseña"
+                      minLength={12}
+                      required
+                    />
+
+                    {errorRestablecer && (
+                      <p className="login-error">
+                        {errorRestablecer}
+                      </p>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="login-submit"
+                      disabled={cargandoRestablecer}
+                    >
+                      {cargandoRestablecer
+                        ? 'Guardando...'
+                        : 'Guardar nueva contraseña'}
+                    </button>
+                  </form>
+                </>
+              )}
+            </section>
+          </div>
         )}
 
         <footer className="footer">
