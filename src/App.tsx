@@ -651,11 +651,11 @@ const bloqueMapaHistorico = (
             <AjustarMapa data={data} />
 
             {/* MAPA BASE: CALLES Y MANZANAS */}
-            <<TileLayer
+<TileLayer
   attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
   url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
   maxZoom={19}
-
+/>
             {/* POLÍGONOS DE LOS CIRCUITOS ELECTORALES */}
             <GeoJSON
               key={`${eleccion}-${resultados.length}`}
