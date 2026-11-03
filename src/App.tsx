@@ -119,8 +119,6 @@ const [confirmarPassword, setConfirmarPassword] = useState('')
 const [errorRestablecer, setErrorRestablecer] = useState('')
 const [exitoRestablecer, setExitoRestablecer] = useState(false)
 const [cargandoRestablecer, setCargandoRestablecer] = useState(false)
-  const [usuario, setUsuario] = useState<any>(null)
-const [perfilUsuario, setPerfilUsuario] = useState<any>(null)
   const [data, setData] = useState<any>(null)
   const [mostrarLogin, setMostrarLogin] = useState(false)
 const [emailLogin, setEmailLogin] = useState('')
@@ -183,8 +181,8 @@ const [cargandoLogin, setCargandoLogin] = useState(false)
     return
   }
 
-  setUsuario(data.user)
-  setPerfilUsuario(perfil)
+  
+ 
   setMostrarLogin(false)
   setPasswordLogin('')
   setCargandoLogin(false)
