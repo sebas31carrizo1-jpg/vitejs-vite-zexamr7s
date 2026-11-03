@@ -7,5 +7,4 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Faltan las credenciales de Supabase en el archivo .env');
 }
 
-
 export const supabase = createClient(supabaseUrl, supabaseKey);
