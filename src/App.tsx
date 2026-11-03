@@ -389,38 +389,7 @@ function App() {
     }
   }
 
-  const configurarCircuito = (feature: any, layer: any) => {
-    const codigo = String(feature?.properties?.circuito ?? 'Sin código')
-    const ganador = ganadorPorCodigo[normalizarCodigoCircuito(codigo)]
-
-    const etiqueta = ganador
-      ? `Circuito ${codigo} · ${ganador.name} · ${ganador.percentage.toFixed(1)}%`
-      : `Circuito ${codigo} · Sin resultados`
-
-    layer.bindTooltip(etiqueta, {
-      sticky: true,
-      className: 'circuito-tooltip',
-    })
-
-    layer.on({
-      click: () => setCircuitoSeleccionado(codigo),
-
-      mouseover: (evento: any) => {
-        evento.target.setStyle({
-          weight: 3,
-          color: '#ffffff',
-          fillOpacity: 1,
-        })
-
-        evento.target.bringToFront()
-      },
-
-      mouseout: (evento: any) => {
-        evento.target.setStyle(estiloCircuitos(feature))
-      },
-    })
-  }
-
+  
   // NAVEGACIÓN
   const irASeccion = (nombre: string) => {
     setSeccion(nombre)
