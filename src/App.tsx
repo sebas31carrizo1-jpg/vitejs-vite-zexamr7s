@@ -370,26 +370,7 @@ function App() {
     return mapa
   }, [resultadosPorCircuito])
 
-  // ESTILO DEL MAPA HISTÓRICO
-  const estiloCircuitos = (feature: any) => {
-    const codigo = String(feature?.properties?.circuito ?? '')
-    const seleccionado = codigo === circuitoSeleccionado
-    const ganador = ganadorPorCodigo[normalizarCodigoCircuito(codigo)]
-    const color = ganador?.color || '#334155'
-
-    const intensidad = ganador
-      ? Math.max(0.28, Math.min(1, ganador.percentage / 60))
-      : 0.16
-
-    return {
-      color: seleccionado ? '#ffffff' : '#94a3b8',
-      weight: seleccionado ? 3 : 1.1,
-      fillColor: color,
-      fillOpacity: ganador ? intensidad : 0.12,
-    }
-  }
-
-  
+ 
   // NAVEGACIÓN
   const irASeccion = (nombre: string) => {
     setSeccion(nombre)
