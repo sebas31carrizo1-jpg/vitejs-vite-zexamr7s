@@ -143,7 +143,47 @@ const [cargandoLogin, setCargandoLogin] = useState(false)
   const [estadoSupabase, setEstadoSupabase] = useState<
     'comprobando' | 'conectado' | 'error'
   >('comprobando')
-
+  const iniciarSesion = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+  
+    setCargandoLogin(true)
+    setErrorLogin('')
+  
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: emailLogin.trim(),
+      password: passwordLogin,
+    })
+  
+    if (error || !data.user) {
+      setErrorLogin('Correo o contraseña incorrectos.')
+      setCargandoLogin(false)
+      return
+    }
+  
+    const { data: perfil, error: errorPerfil } = await supabase
+      .from('perfiles')
+      .select('id, nombre, rol, activo, debe_cambiar_password')
+      .eq('id', data.user.id)
+      .maybeSingle()
+  
+    if (errorPerfil || !perfil || !perfil.activo) {
+      await supabase.auth.signOut()
+      setErrorLogin('La cuenta no está habilitada para ingresar.')
+      setCargandoLogin(false)
+      return
+    }
+  
+    if (perfil.debe_cambiar_password) {
+      await supabase.auth.signOut()
+      setErrorLogin('Esta cuenta debe cambiar su contraseña inicial. Estamos preparando ese paso.')
+      setCargandoLogin(false)
+      return
+    }
+  
+    setMostrarLogin(false)
+    setPasswordLogin('')
+    setCargandoLogin(false)
+  }
 const restablecerPassword = async (
   e: React.FormEvent<HTMLFormElement>
 ) => {
@@ -1361,7 +1401,7 @@ const bloqueMapaHistorico = (
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
-                
+
                 {errorLogin && (
                   <p className="login-error">{errorLogin}</p>
                 )}
