@@ -144,49 +144,6 @@ const [cargandoLogin, setCargandoLogin] = useState(false)
     'comprobando' | 'conectado' | 'error'
   >('comprobando')
 
-  const iniciarSesion = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault()
-
-  setCargandoLogin(true)
-  setErrorLogin('')
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: emailLogin.trim(),
-    password: passwordLogin,
-  })
-
-  if (error || !data.user) {
-    setErrorLogin('Correo o contraseña incorrectos.')
-    setCargandoLogin(false)
-    return
-  }
-
-  const { data: perfil, error: errorPerfil } = await supabase
-    .from('perfiles')
-    .select('id, nombre, rol, activo, debe_cambiar_password')
-    .eq('id', data.user.id)
-    .maybeSingle()
-
-  if (errorPerfil || !perfil || !perfil.activo) {
-    await supabase.auth.signOut()
-    setErrorLogin('La cuenta no está habilitada para ingresar.')
-    setCargandoLogin(false)
-    return
-  }
-
-  if (perfil.debe_cambiar_password) {
-    await supabase.auth.signOut()
-    setErrorLogin('Esta cuenta debe cambiar su contraseña inicial. Estamos preparando ese paso.')
-    setCargandoLogin(false)
-    return
-  }
-
-  
- 
-  setMostrarLogin(false)
-  setPasswordLogin('')
-  setCargandoLogin(false)
-}
 const restablecerPassword = async (
   e: React.FormEvent<HTMLFormElement>
 ) => {
@@ -223,6 +180,31 @@ const restablecerPassword = async (
   setConfirmarPassword('')
   setCargandoRestablecer(false)
   setExitoRestablecer(true)
+}
+const solicitarRecuperacion = async () => {
+  setErrorLogin('')
+  setCargandoLogin(true)
+
+  if (!emailLogin.trim()) {
+    setErrorLogin('Ingresá tu correo electrónico.')
+    setCargandoLogin(false)
+    return
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    emailLogin.trim(),
+    {
+      redirectTo: 'https://vitejs-vite-zexamr7s.vercel.app/',
+    }
+  )
+
+  if (error) {
+    setErrorLogin('No se pudo enviar el correo. ' + error.message)
+  } else {
+    setErrorLogin('Te enviamos un correo para recuperar tu contraseña. Revisá tu bandeja de entrada.')
+  }
+
+  setCargandoLogin(false)
 }
 useEffect(() => {
   const {
@@ -1363,7 +1345,23 @@ const bloqueMapaHistorico = (
                   placeholder="Ingresá tu contraseña"
                   required
                 />
-
+                <button
+                  type="button"
+                  onClick={solicitarRecuperacion}
+                  disabled={cargandoLogin}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#087fbd',
+                    cursor: 'pointer',
+                    textAlign: 'right',
+                    padding: '5px 0',
+                    fontSize: '13px'
+                  }}
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+                
                 {errorLogin && (
                   <p className="login-error">{errorLogin}</p>
                 )}
